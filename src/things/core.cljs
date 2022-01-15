@@ -38,7 +38,9 @@
 (defn select-all [db query nskw]
   (go (-> (<! (select-all* db query))
           (js->clj :keywordize-keys true)
-          (->> (s/transform [s/LAST s/ALL s/MAP-KEYS s/NAMESPACE] (constantly (name nskw)))))))
+          (->> 
+           (s/setval [s/LAST s/ALL s/MAP-VALS nil?] s/NONE)
+           (s/transform [s/LAST s/ALL s/MAP-KEYS s/NAMESPACE] (constantly (name nskw)))))))
 
 (defn get-areas [db]
   (go (->> (<! (select-all db area-query :things.area))
@@ -115,6 +117,8 @@
         (println "Database not found" db)))))
 
 (comment  ;repl helpers
+  (defonce db (open-db default-db))
+  
   (defn pchan [ch] (go (pprint (<! ch))))
   (defn test-db [db] (select-all* db "select 1 from TMTask limit 1"))
 
