@@ -63,7 +63,8 @@
 (defn request-handler [db req res]
   (go
     (let [data (<! (get-things-data db))]
-      (.end res (pretty-str data)))))
+      (j/call res :writeHead 200 #js {"Content-Type" "application/edn"})
+      (j/call res :end (pretty-str (vec data))))))
 
 ; a place to hang onto the server so we can stop/start it in repl
 (defonce server-ref
