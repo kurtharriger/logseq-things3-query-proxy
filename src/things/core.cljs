@@ -46,7 +46,9 @@
 
 (defn get-tasks [db]
   (go (->> (<! (select-all db task-query :things.task))
-           (s/transform [s/LAST s/ALL :things.task/cachedTags] str))))
+           (s/transform [s/LAST s/ALL :things.task/cachedTags] str)
+           (s/transform [s/LAST s/ALL :things.task/recurrenceRule] str)
+           (s/transform [s/LAST s/ALL :things.task/repeater] str))))
 
 (defn get-checklists [db] 
   (select-all db checklist-query :things.checklist))
