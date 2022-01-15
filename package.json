@@ -1,0 +1,11 @@
+{
+  "scripts":{
+    "watch": "shadow-cljs watch app",
+    "build": "shadow-cljs release app"
+  },
+  "dependencies": {
+    "shadow-cljs": "^2.16.12",
+    "sqlite3": "^5.0.2",
+    "ws": "^8.4.2"
+  }
+}

@@ -1,0 +1,8 @@
+node_modules/
+db/
+.lsp/
+.clj-kondo/
+.calva/
+.shadow-cljs/
+local/
+main.js
