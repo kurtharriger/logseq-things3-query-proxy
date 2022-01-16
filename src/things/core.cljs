@@ -9,7 +9,7 @@
             [cljs.reader :refer [read-string]]
             [clojure.pprint :refer [pprint]]
             [clojure.string]
-           
+
             [com.rpl.specter :as s :refer-macros [select transform]]
             [clojure.tools.cli :refer [parse-opts]]
             [datascript.core :as d]))
@@ -17,12 +17,22 @@
 ;(def default-db "db/main.sqlite")
 (def default-db "~/Library/Group Containers/JLMPQHK86H.com.culturedcode.ThingsMac/Things Database.thingsdatabase/main.sqlite")
 (def area-query       "SELECT * FROM TMArea;")
-(def task-query       "SELECT * FROM TMTask where trashed=0;")
+; tasks may have other tasks as projects and datascript 
+; and thus when loading into datascript the "project"
+; tasks must be loaded before tasks that reference them
+; note: a project task may be trashed without its child tasks being 
+; marked as trashed which will cause datascript to complain that
+; referenced project does not exist. Thus if excluding trashed
+; need to revise query to join parent and ensure it is not trashed
+; or otherwise handle this case when loading data into datascript
+; for now I'll just return all data and filter trashed rows in 
+; datascript
+(def task-query       "SELECT * FROM TMTask order by project")
 (def checklist-query  "SELECT * FROM TMChecklistItem;")
 
 (defn write-chan [ch err data]
   (when err (println err))
-  (go     
+  (go
     (>! ch [err data])
     (async/close! ch)))
 
@@ -38,7 +48,7 @@
 (defn select-all [db query nskw]
   (go (-> (<! (select-all* db query))
           (js->clj :keywordize-keys true)
-          (->> 
+          (->>
            (s/setval [s/LAST s/ALL s/MAP-VALS nil?] s/NONE)
            (s/transform [s/LAST s/ALL s/MAP-KEYS s/NAMESPACE] (constantly (name nskw)))))))
 
@@ -48,22 +58,26 @@
 
 (defn get-tasks [db]
   (go (->> (<! (select-all db task-query :things.task))
+           ; replace blob buffers with strings
            (s/transform [s/LAST s/ALL :things.task/cachedTags] str)
            (s/transform [s/LAST s/ALL :things.task/recurrenceRule] str)
-           (s/transform [s/LAST s/ALL :things.task/repeater] str))))
+           (s/transform [s/LAST s/ALL :things.task/repeater] str)
+           (s/transform [s/LAST s/ALL (s/must :things.task/area)] #(do [:things.area/uuid %]))
+           (s/transform [s/LAST s/ALL (s/must :things.task/project)] #(do [:things.task/uuid %])))))
 
-(defn get-checklists [db] 
-  (select-all db checklist-query :things.checklist))
+(defn get-checklists [db]
+  (go (->> (<! (select-all db checklist-query :things.checklist))
+           (s/transform [s/LAST s/ALL (s/must :things.checklist/task)] #(do [:things.task/uuid %])))))
 
 (defn get-things-data [db]
-  ;; could merge but want them in order
+  ; note order is important if for loading into datascript
   (go (concat (last (<! (get-areas db)))
               (last (<! (get-tasks db)))
               (last (<! (get-checklists db))))))
 
 (defn pretty-str [data]
-  (with-out-str (pprint data))
-  )
+  (with-out-str (pprint data)))
+
 (defn request-handler [db req res]
   (go
     (let [data (<! (get-things-data db))]
@@ -99,15 +113,14 @@
     :id :port
     :default 7980
     :parse-fn read-string
-    :validate [#(and (int? %) (< 1025 % 0x10000)) "Must be a number between 1025 and 65536"]
-    ]
+    :validate [#(and (int? %) (< 1025 % 0x10000)) "Must be a number between 1025 and 65536"]]
    ;; A non-idempotent option (:default is applied first)
    ["-d" "--database DB" "Database file"
     :id :db
     :default default-db]
    ["-h" "--help"]])
 
-(defn main [ & args]
+(defn main [& args]
   (let [{:keys [options errors summary]} (parse-opts args cli-options)
         {:keys [port db help]} options]
     (if (or errors help)
@@ -116,10 +129,10 @@
         (start-server conn port)
         (println "Database not found" db)))))
 
-(comment  ;repl helpers
+(do  ;repl helpers
   (defonce db (open-db default-db))
-  
+
   (defn pchan [ch] (go (pprint (<! ch))))
   (defn test-db [db] (select-all* db "select 1 from TMTask limit 1"))
 
- )
+  )
