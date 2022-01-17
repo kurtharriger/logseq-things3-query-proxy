@@ -54,26 +54,61 @@
 
 (defn get-areas [db]
   (go (->> (<! (select-all db area-query :things.area))
-           (s/transform [s/LAST s/ALL :things.area/cachedTags] str))))
+           (s/transform [s/LAST s/ALL (s/must :things.area/cachedTags)] str))))
+
+(defn coerce-date [unix]
+  (when (and unix (pos? unix))
+    (js/Date. (* 1000 unix))))
+
+(defn as-ref [target-key ] 
+  (fn [target-id] [target-key target-id]))
 
 (defn get-tasks [db]
+  ; todo: transducer
   (go (->> (<! (select-all db task-query :things.task))
            ; replace blob buffers with strings
-           (s/transform [s/LAST s/ALL :things.task/cachedTags] str)
-           (s/transform [s/LAST s/ALL :things.task/recurrenceRule] str)
-           (s/transform [s/LAST s/ALL :things.task/repeater] str)
-           (s/transform [s/LAST s/ALL (s/must :things.task/area)] #(do [:things.area/uuid %]))
-           (s/transform [s/LAST s/ALL (s/must :things.task/project)] #(do [:things.task/uuid %])))))
+           (s/transform [s/LAST s/ALL (s/must :things.task/cachedTags)] str)
+           (s/transform [s/LAST s/ALL (s/must :things.task/recurrenceRule)] str)
+           (s/transform [s/LAST s/ALL (s/must :things.task/repeater)] str)
+           (s/transform [s/LAST s/ALL (s/must :things.task/creationDate)] coerce-date)
+           (s/transform [s/LAST s/ALL (s/must :things.task/userModificationDate)] coerce-date)
+           (s/transform [s/LAST s/ALL (s/must :things.task/dueDate)] coerce-date)
+           (s/transform [s/LAST s/ALL (s/must :things.task/startDate)] coerce-date)
+           (s/transform [s/LAST s/ALL (s/must :things.task/stopDate)] coerce-date)
+           (s/transform [s/LAST s/ALL (s/must :things.task/instanceCreationStartDate)] coerce-date)
+           (s/transform [s/LAST s/ALL (s/must :things.task/afterCompletionReferenceDate)] coerce-date)
+           ;todo is this a ate?
+           (s/transform [s/LAST s/ALL (s/must :things.task/alarmTimeOffset)] coerce-date)
+           (s/transform [s/LAST s/ALL (s/must :things.task/lastAlarmInteractionDate)] coerce-date)
+           (s/transform [s/LAST s/ALL (s/must :things.task/todayIndexReferenceDate)] coerce-date)
+           (s/transform [s/LAST s/ALL (s/must :things.task/nextInstanceStartDate)] coerce-date)
+           (s/transform [s/LAST s/ALL (s/must :things.task/dueDateSuppressionDate)] coerce-date)
+           (s/transform [s/LAST s/ALL (s/must :things.task/repeaterMigrationDate)] coerce-date)
+           (s/transform [s/LAST s/ALL (s/must :things.task/area)] (as-ref :things.area/uuid))
+           (s/transform [s/LAST s/ALL (s/must :things.task/project)] (as-ref :things.task/uuid))
+           ;todo need to ensure these reference tasks appear before tasks that reference them
+           ;(s/transform [s/LAST s/ALL (s/must :things.task/repeatingTemplate)] (as-ref :things.task/uuid)
+           
+           
+           
+           )
+      
+      ))
 
 (defn get-checklists [db]
   (go (->> (<! (select-all db checklist-query :things.checklist))
-           (s/transform [s/LAST s/ALL (s/must :things.checklist/task)] #(do [:things.task/uuid %])))))
+           (s/transform [s/LAST s/ALL (s/must :things.checklist/task)] (as-ref :things.task/uuid))
+           (s/transform [s/LAST s/ALL (s/must :things.checklist/creationDate)] coerce-date)
+           (s/transform [s/LAST s/ALL (s/must :things.checklist/userModificationDate)] coerce-date))))
 
 (defn get-things-data [db]
   ; note order is important if for loading into datascript
-  (go (concat (last (<! (get-areas db)))
-              (last (<! (get-tasks db)))
-              (last (<! (get-checklists db))))))
+  (go 
+    (->>
+     (concat (last (<! (get-areas db)))
+             (last (<! (get-tasks db)))
+             (last (<! (get-checklists db))))
+     (s/setval [s/ALL s/MAP-VALS nil?] s/NONE))))
 
 (defn pretty-str [data]
   (with-out-str (pprint data)))
@@ -129,10 +164,26 @@
         (start-server conn port)
         (println "Database not found" db)))))
 
-(do  ;repl helpers
+(defonce ds-db
+  (d/create-conn
+   {:things.area/uuid {:db/unique :db.unique/identity}
+    :things.task/uuid {:db/unique :db.unique/identity}
+    :things.checklist/uuid  {:db/unique :db.unique/identity}
+    :things.task/area {:db/valueType :db.type/ref}
+    :things.task/project {:db/valueType :db.type/ref}
+    ; todo: order of load is important otherwise it will error
+    ;:things.task/repeatingTemplate {:db/valueType :db.type/ref}
+    :things.checklist/task {:db/valueType :db.type/ref}}))
+
+(defn load-datascript! [db]
+  (go (d/transact! ds-db (<! (get-things-data db)))))
+
+(comment  ;repl helpers
   (defonce db (open-db default-db))
 
+  (load-datascript! db)
   (defn pchan [ch] (go (pprint (<! ch))))
   (defn test-db [db] (select-all* db "select 1 from TMTask limit 1"))
 
+  
   )
