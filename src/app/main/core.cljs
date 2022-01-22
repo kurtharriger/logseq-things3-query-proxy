@@ -1,5 +1,6 @@
 (ns app.main.core
   (:require ["electron" :refer [app BrowserWindow crashReporter Tray Menu ipcMain]]
+            ["path" :as path]
             [applied-science.js-interop :as j]
             [cljs.core.async  :as async :refer [put! go-loop <!]]))
 
@@ -10,8 +11,13 @@
         (BrowserWindow.
          (clj->js {:width 800
                    :height 600
-                   :show false}))]
-    ;(.loadURL ^js/electron.BrowserWindow window (str "file://" js/__dirname "/public/index.html"))
+                   :show false
+                   :webPreferences 
+                   {;:nodeIntegration true
+                    ;todo: also need contextBridge to access ipcRenderer
+                    ; if this is enabled
+                    :contextIsolation false
+                    :preload (path/join js/__dirname "/preload.js")}}))]
     (j/call window :loadURL (str "file://" js/__dirname "/public/index.html"))
     (j/call window :on "close"
             (fn [e]
@@ -33,11 +39,16 @@
 (defn show-browser [window]
   (j/call window :show))
 
+(defn start-ipc-listener! []
+  (j/call ipcMain :on "message" 
+          (fn [_ msg] (println "received msg" msg))))
+
 
 (def main-window (atom nil))
 (def system-tray (atom nil))
 
 (defn ready! []
+  (start-ipc-listener!)
   (let [{:keys [window ch]} (create-browser!)
         tray (create-tray! (partial show-browser window))]
     ; tray seems to disappear after about a minute when garbage collection
