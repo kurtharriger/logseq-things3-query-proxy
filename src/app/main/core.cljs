@@ -1,33 +1,57 @@
 (ns app.main.core
-  (:require ["electron" :refer [app BrowserWindow crashReporter Tray Menu]]
+  (:require ["electron" :refer [app BrowserWindow crashReporter Tray Menu ipcMain]]
             [applied-science.js-interop :as j]
-            [com.wsscode.async.async-cljs :as wa :refer [go-promise  <? <?maybe]]))
-
-(def main-window (atom nil))
-(def tray (atom nil))
-
-(defn init-browser []
-  (reset! main-window (BrowserWindow.
-                        (clj->js {:width 800
-                                  :height 600
-                                  :show false
-                                  :webPreferences
-                                  {:nodeIntegration true}})))
-  ; Path is relative to the compiled js file (main.js in our case)
-  (.loadURL ^js/electron.BrowserWindow @main-window (str "file://" js/__dirname "/public/index.html"))
-  (.on ^js/electron.BrowserWindow @main-window "closed" #(reset! main-window nil)))
+            [cljs.core.async  :as async :refer [put! go-loop <!]]))
 
 
+(defn create-browser! []
+  (let [ch (async/chan)
+        window
+        (BrowserWindow.
+         (clj->js {:width 800
+                   :height 600
+                   :show false}))]
+    ;(.loadURL ^js/electron.BrowserWindow window (str "file://" js/__dirname "/public/index.html"))
+    (j/call window :loadURL (str "file://" js/__dirname "/public/index.html"))
+    (j/call window :on "close"
+            (fn [e]
+              (j/call e :preventDefault true)
+              (j/call window :hide)
+              ;(put! ch [:quit])
+              ))
+    {:window window
+     :ch ch}))
 
-(defn create-tray [on-click]
+
+
+(defn create-tray! [on-click]
+  ;; icon from https://www.flaticon.com/uicons?word=task
   (let [tray (Tray. "resources/public/img/tray.png")]
     (j/call tray :on "click" on-click)
     tray))
 
-(defn init-tray! []
-  (swap! tray (fn [tray]
-                (when tray (j/call @tray :destroy))
-                (create-tray init-browser))))
+(defn show-browser [window]
+  (j/call window :show))
+
+
+(def main-window (atom nil))
+(def system-tray (atom nil))
+
+(defn ready! []
+  (let [{:keys [window ch]} (create-browser!)
+        tray (create-tray! (partial show-browser window))]
+    ; tray seems to disappear after about a minute when garbage collection
+    ; runs if not saved to global not sure why reference in go loop does not
+    ; prevent garbage collection
+    (reset! main-window window)
+    (reset! system-tray tray)
+    (go-loop []
+      (let [msg (<! ch)]
+        (when (= :quit (first msg))
+          (j/call window :destroy)
+          (j/call tray :destroy)
+          (j/call app :quit)))
+      (recur))))
 
 (defn main []
   ; CrashReporter can just be omitted
@@ -38,13 +62,7 @@
   ;;           :submitURL "https://example.com/submit-url"
   ;;           :autoSubmit false}))
 
-  (.on app "window-all-closed" #(when-not (= js/process.platform "darwin")
-                                  (.quit app)))
-  (.on app "ready" init-tray!))
-
-;; icon from https://www.flaticon.com/uicons?word=task
-
-
-(comment 
-  
+  ;; (.on app "window-all-closed" #(when-not (= js/process.platform "darwin")
+  ;;                                 (.quit app)))
+  (j/call app :on "ready" ready!)
   )
