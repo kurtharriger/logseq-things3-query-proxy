@@ -7,7 +7,7 @@
             [cljs.core.async  :as async :refer [put! go-loop <!]]))
 
 
-(defn create-browser!
+(defn create-browser
   []
   (let [ch (async/chan)
         window
@@ -25,14 +25,12 @@
     (j/call window :on "close"
       (fn [e]
         (j/call e :preventDefault true)
-        (j/call window :hide)
-        ;; (put! ch [:quit])
-        ))
+        (j/call window :hide)))
     {:window window
      :ch ch}))
 
 
-(defn create-tray!
+(defn create-tray
   [on-click]
   ;; icon from https://www.flaticon.com/uicons?word=task
   (let [tray (Tray. "resources/public/img/tray.png")]
@@ -40,7 +38,7 @@
     tray))
 
 
-(defn show-browser
+(defn show-browser!
   [window]
   (j/call window :show))
 
@@ -58,8 +56,8 @@
 (defn ready!
   []
   (start-ipc-listener!)
-  (let [{:keys [window ch]} (create-browser!)
-        tray (create-tray! (partial show-browser window))]
+  (let [{:keys [window ch]} (create-browser)
+        tray (create-tray (partial show-browser! window))]
     ;; tray seems to disappear after about a minute when garbage collection
     ;; runs if not saved to global not sure why reference in go loop does not
     ;; prevent garbage collection
@@ -79,15 +77,18 @@
   (callback {:status 200
              :body "Hello Macchiato"}))
 
-(defn server []
+
+(defn server
+  []
   (info "Hey I am running now!")
   (let [host "127.0.0.1"
         port 3000]
     (http/start
-     {:handler    handler
-      :host       host
-      :port       port
-      :on-success #(info "macchiato-test started on" host ":" port)})))
+      {:handler    handler
+       :host       host
+       :port       port
+       :on-success #(info "macchiato-test started on" host ":" port)})))
+
 
 (defn main
   []

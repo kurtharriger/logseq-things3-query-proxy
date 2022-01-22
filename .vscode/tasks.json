@@ -1,0 +1,13 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Run cljstyle",
+      "type": "shell",
+      "command": "cljstyle fix src",
+      "presentation": {
+        "reveal": "silent"
+      }
+    }
+  ]
+}

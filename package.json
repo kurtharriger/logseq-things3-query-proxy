@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "shadow-cljs watch main renderer",
     "build": "shadow-cljs compile main renderer",
+    "lint": "cljstyle fix src",
     "clean": "rm -rf resources/public/js/* && rm -rf target"
   },
   "keywords": [
