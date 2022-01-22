@@ -1,6 +1,7 @@
 (ns app.renderer.core
   (:require [reagent.core :refer [atom]]
-            [reagent.dom :as rd]))
+            [reagent.dom :as rd]
+            ["peerjs" :as peer]))
 
 (enable-console-print!)
 
