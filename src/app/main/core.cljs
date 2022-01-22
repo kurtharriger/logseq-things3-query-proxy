@@ -1,6 +1,8 @@
 (ns app.main.core
   (:require ["electron" :refer [app BrowserWindow crashReporter Tray Menu ipcMain]]
             ["path" :as path]
+            [macchiato.server :as http]
+            [taoensso.timbre :refer [info]]
             [applied-science.js-interop :as j]
             [cljs.core.async  :as async :refer [put! go-loop <!]]))
 
@@ -72,6 +74,21 @@
       (recur))))
 
 
+(defn handler
+  [request callback]
+  (callback {:status 200
+             :body "Hello Macchiato"}))
+
+(defn server []
+  (info "Hey I am running now!")
+  (let [host "127.0.0.1"
+        port 3000]
+    (http/start
+     {:handler    handler
+      :host       host
+      :port       port
+      :on-success #(info "macchiato-test started on" host ":" port)})))
+
 (defn main
   []
   ;; CrashReporter can just be omitted
@@ -84,4 +101,5 @@
 
   ;; (.on app "window-all-closed" #(when-not (= js/process.platform "darwin")
   ;;                                 (.quit app)))
+  (server)
   (j/call app :on "ready" ready!))
