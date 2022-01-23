@@ -8,6 +8,7 @@
    [clojure.pprint :refer [pprint]]
    [com.rpl.specter :as s :refer-macros [select transform]]
    [com.wsscode.async.async-cljs :as wa :refer [go-promise  <?maybe]]
+   [datascript.core :as d]
    [medley.core :as medley]
    [taoensso.timbre :refer [info error trace debug]]))
 
@@ -38,8 +39,8 @@
          data (remove-nil-values data)
          data (mapv row-transform data)
          ; again remove nils as some transforms may have removed values
-         data (remove-nil-values data)
-         ]
+         data (remove-nil-values data)]
+         
      data)))
 (defn setkeyns
   "Update keys in the data map to have the specified namespace. 
@@ -78,12 +79,14 @@
       (update :area (as-ref :things.area/uuid))
       (update :project (as-ref :things.project/uuid))
       (update :actiongroup (as-ref :things.actiongroup/uuid))
+      (update :repeatingTemplate (as-ref :things.task/uuid))
       (setkeyns ns)))
 
 (def get-projects (partial query (partial task-transform "things.project") "select * from TMTask where type = 1 order by 'index'"))
  ; action group = project headers
 (def get-action-groups (partial query (partial task-transform "things.actiongroup") "select * from TMTask where type = 2 order by 'index'"))
-(def get-tasks (partial query (partial task-transform "things.task") "select * from TMTask where type = 0 order by 'index'"))
+; also ordered by repeatingTemplate to ensure that any templates are imported before they are used
+(def get-tasks (partial query (partial task-transform "things.task") "select * from TMTask where type = 0 order by repeatingTemplate, 'index'"))
 
 (defn checklistitem-transform [row]
   (-> row
@@ -91,11 +94,44 @@
       (update :userModificationDate coerce-date)
       (update :stopDate coerce-date)
       (setkeyns "things.checklistitem")))
-(def get-checklistitems (partial query (partial checklistitem-transform "things.task") "select * from TMChecklistItem order by 'index'"))
+(def get-checklistitems (partial query checklistitem-transform "select * from TMChecklistItem order by 'index'"))
 
 ; todo task tags
 
 ;;
+
+
+(defonce datascript-conn
+  (d/create-conn
+   {:things.area/uuid {:db/unique :db.unique/identity}
+    :things.project/uuid {:db/unique :db.unique/identity}
+    :things.actiongroup/uuid {:db/unique :db.unique/identity}
+    :things.task/uuid {:db/unique :db.unique/identity}
+    :things.checklist/uuid  {:db/unique :db.unique/identity}
+    :things.project/area {:db/valueType :db.type/ref}
+    :things.actiongroup/area {:db/valueType :db.type/ref}
+    :things.actiongroup/project {:db/valueType :db.type/ref}
+    :things.task/area {:db/valueType :db.type/ref}
+    :things.task/project {:db/valueType :db.type/ref}
+    :things.task/repeatingTemplate {:db/valueType :db.type/ref}
+    :things.checklist/task {:db/valueType :db.type/ref}}))
+
+(defn load-datascript! [conn db]
+  (go-promise
+   (let [areas (<?maybe (get-areas db))
+         projects (<?maybe (get-projects db))
+         actiongroups (<?maybe (get-action-groups db))
+         tasks (<?maybe (get-tasks db))
+         checklistitems (<?maybe (get-checklistitems db))]
+     (try
+       (d/transact! conn
+                    (concat areas
+                            projects
+                            actiongroups
+                            tasks
+                            checklistitems))
+       (catch :default e (error e))))))
+
 
 (def default-db "~/Library/Group Containers/JLMPQHK86H.com.culturedcode.ThingsMac/Things Database.thingsdatabase/main.sqlite")
 ; copied Things.sqlite3 from https://github.com/AlexanderWillner/things.sh 7104771af191eec196e4dff087ece02618b05e4c
@@ -108,11 +144,12 @@
     (if exists (sql/Database. db-path)
         (throw (ex-info "database not found" {:path db-path})))))
 
+
 (comment
   (defonce demodb (open-db "resources/Things.sqlite3"))
   (defonce db (open-db default-db))
 
-
+  (count (:eavt @datascript-conn))
 ;; 
   (def last-gp (volatile! nil))
 
@@ -122,5 +159,5 @@
                              (catch :default e e))]
                   (vreset! last-gp r)
                   (pprint r)
-                  r)))
-  )
+                  r))))
+  
