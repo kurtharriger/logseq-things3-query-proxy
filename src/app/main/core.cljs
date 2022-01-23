@@ -84,8 +84,10 @@
                    (swap! state merge {:server/status :failed :server/error err}))})))
 
 
-(defn hide-dock-icon! []
+(defn hide-dock-icon!
+  []
   (j/call (j/get app :dock) :hide))
+
 
 (defn ready!
   []
