@@ -14,3 +14,11 @@ npx electron .
 npm run build
 npx electron-packager . HelloWorld --platform=darwin --arch=x64
 ```
+
+
+## References
+
+[Obsidian Things Logbook](https://github.com/liamcain/obsidian-things-logbook)
+[things.sh](https://github.com/AlexanderWillner/things.sh)
+
+
