@@ -6,6 +6,7 @@
     [applied-science.js-interop :as j]
     [clojure.string :as string]
     [clojure.pprint :refer [pprint]]
+    [cljs.core.async :as async]
     [com.rpl.specter :as s :refer-macros [select transform]]
     [com.wsscode.async.async-cljs :as wa :refer [go-promise  <?maybe]]
     [datascript.core :as d]
@@ -119,6 +120,7 @@
     (update :creationDate coerce-date)
     (update :userModificationDate coerce-date)
     (update :stopDate coerce-date)
+    (update :task (as-ref :things.task/uuid))
     (setkeyns "things.checklistitem")))
 
 
@@ -130,20 +132,25 @@
 ;;
 
 
-(defonce datascript-conn
+(defn create-datascript-conn
+  []
   (d/create-conn
     {:things.area/uuid {:db/unique :db.unique/identity}
+
      :things.project/uuid {:db/unique :db.unique/identity}
-     :things.actiongroup/uuid {:db/unique :db.unique/identity}
-     :things.task/uuid {:db/unique :db.unique/identity}
-     :things.checklist/uuid  {:db/unique :db.unique/identity}
      :things.project/area {:db/valueType :db.type/ref}
+
+     :things.actiongroup/uuid {:db/unique :db.unique/identity}
      :things.actiongroup/area {:db/valueType :db.type/ref}
      :things.actiongroup/project {:db/valueType :db.type/ref}
+
+     :things.task/uuid {:db/unique :db.unique/identity}
      :things.task/area {:db/valueType :db.type/ref}
      :things.task/project {:db/valueType :db.type/ref}
      :things.task/repeatingTemplate {:db/valueType :db.type/ref}
-     :things.checklist/task {:db/valueType :db.type/ref}}))
+
+     :things.checklistitem/uuid  {:db/unique :db.unique/identity}
+     :things.checklistitem/task {:db/valueType :db.type/ref}}))
 
 
 (defn load-datascript!
@@ -161,14 +168,10 @@
             actiongroups
             tasks
             checklistitems))
-        (catch :default e (error e))))))
-
-
-(def default-db "~/Library/Group Containers/JLMPQHK86H.com.culturedcode.ThingsMac/Things Database.thingsdatabase/main.sqlite")
-
-
-;; copied Things.sqlite3 from https://github.com/AlexanderWillner/things.sh 7104771af191eec196e4dff087ece02618b05e4c
-(def demo-db "resources/Things.sqlite3")
+        (info "Added " (count (d/datoms @conn :eavt)) "datums.")
+        (catch :default e
+          (do (error e)
+              (throw (ex-info "Error populating datascript db" {} e))))))))
 
 
 (defn open-db
@@ -180,9 +183,30 @@
         (throw (ex-info "database not found" {:path db-path})))))
 
 
+(def default-db-path "~/Library/Group Containers/JLMPQHK86H.com.culturedcode.ThingsMac/Things Database.thingsdatabase/main.sqlite")
+
+
+;; copied Things.sqlite3 from https://github.com/AlexanderWillner/things.sh 7104771af191eec196e4dff087ece02618b05e4c
+(def demo-db-path "resources/Things.sqlite3")
+
+
+(defonce default-db (delay (open-db default-db-path)))
+(defonce datascript-conn (create-datascript-conn))
+
+
+(defn begin-polling-changes!
+  ([]
+   (begin-polling-changes! datascript-conn @default-db))
+  ([conn db]
+   (async/go-loop []
+     (try (<?maybe (load-datascript! conn db)) (catch :default _ nil))
+     (<?maybe (async/timeout 1000))
+     (recur))))
+
+
 (comment
-  (defonce demodb (open-db "resources/Things.sqlite3"))
-  (defonce db (open-db default-db))
+  (defonce demodb (open-db demo-db-path))
+  (defonce db (open-db default-db-path))
 
   (count (:eavt @datascript-conn))
 ;; 

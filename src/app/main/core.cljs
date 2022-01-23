@@ -99,16 +99,14 @@
 
 
 (defn register-crash-reporter
-  [])
-
-
-;; (.start crashReporter
-;;         (clj->js
-;;          {:companyName "MyAwesomeCompany"
-;;           :productName "MyAwesomeApp"
-;;           :submitURL "https://example.com/submit-url"
-;;           :autoSubmit false}))
-
+  []
+  ;; (.start crashReporter
+  ;;         (clj->js
+  ;;          {:companyName "MyAwesomeCompany"
+  ;;           :productName "MyAwesomeApp"
+  ;;           :submitURL "https://example.com/submit-url"
+  ;;           :autoSubmit false}))
+  )
 
 
 (defn main
