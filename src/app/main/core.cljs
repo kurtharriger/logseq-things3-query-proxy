@@ -23,9 +23,10 @@
   []
   (let [window
         (BrowserWindow.
-          (clj->js {:width 800
-                    :height 600
+          (clj->js {:width 500
+                    :height 300
                     :show false
+                    :skipTaskbar true
                     :webPreferences
                     {;; :nodeIntegration true
                      ;; todo: also need contextBridge to access ipcRenderer
@@ -83,11 +84,15 @@
                    (swap! state merge {:server/status :failed :server/error err}))})))
 
 
+(defn hide-dock-icon! []
+  (j/call (j/get app :dock) :hide))
+
 (defn ready!
   []
   (debug "ready!")
   (create-main-window!)
   (create-tray!)
+  (hide-dock-icon!)
   (info "ready"))
 
 
