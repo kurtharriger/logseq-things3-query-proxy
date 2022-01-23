@@ -7,7 +7,8 @@
       "command": "cljstyle fix src",
       "presentation": {
         "reveal": "silent"
-      }
+      },
+      "problemMatcher": []
     }
   ]
 }

@@ -15,7 +15,10 @@
 
  :builds {:main {:target :node-script
                  :output-to "resources/main.js"
-                 :main app.main.core/main}
+                 :main app.main.core/main
+                 :devtools {:before-load-async app.main.core/before-load-async
+                            :after-load app.main.core/after-load}}
+          
 
           :renderer {:target :browser
                      :output-dir "resources/public/js"
