@@ -9,6 +9,11 @@
             [applied-science.js-interop :as j]
             [cljs.core.async  :as async :refer [put! go-loop <!]]))
 
+; icon from https://www.flaticon.com/uicons?word=task
+; note: must specify abs path for it to work in package.
+; dirname is resources folder
+(def tray-icon (path/join js/__dirname "public/img/tray.png"))
+
 
 ;; todo spec
 ;; main-window
@@ -51,8 +56,7 @@
 (defn create-tray!
   []
   (assert (nil? (:system-tray @state)) "create-tray! should only be called once")
-  ;; icon from https://www.flaticon.com/uicons?word=task
-  (let [tray (Tray. "resources/public/img/tray.png")]
+  (let [tray (Tray. tray-icon)]
     (j/call tray :on "click" show-main-window!)
     (swap! state assoc :system-tray tray)
     tray))

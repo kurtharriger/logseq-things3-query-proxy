@@ -10,3 +10,5 @@ target/
 .clj-kondo/
 .lsp/
 local/
+
+Things Query Proxy-darwin-x64/

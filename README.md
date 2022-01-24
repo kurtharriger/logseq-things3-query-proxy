@@ -14,9 +14,14 @@ npx electron .
 ```
 
 ## Release
+
+CAUTION: electron-packager copies all files in working directory 
+into <package>/Things Query Proxy.app/Contents/Resources
+
+Verify your working copy is clean.
+
 ```
-npm run build
-npx electron-packager . HelloWorld --platform=darwin --arch=x64
+npm run package
 ```
 
 

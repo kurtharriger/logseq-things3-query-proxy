@@ -1,20 +1,21 @@
 {
-  "name": "shadow-electron-starter",
-  "version": "1.0.0",
+  "name": "@kurtharriger/logseq-things3-query-proxy",
+  "version": "0.2.0",
   "description": "shadow-cljs electron starter",
   "main": "resources/main.js",
   "scripts": {
     "dev": "shadow-cljs watch main renderer",
     "build": "shadow-cljs compile main renderer",
     "lint": "cljstyle fix src",
-    "clean": "rm -rf resources/public/js/* && rm -rf target"
+    "clean": "rm -rf resources/public/js/* && rm -rf target",
+    "package": " electron-packager . \"Things Query Proxy\" --platform=darwin --arch=x64"
   },
   "keywords": [
     "shadow-cljs",
     "reagent",
     "electron"
   ],
-  "author": "Ahonn Jiang <ahonn95@outlook.com>",
+  "author": "Kurt Harriger <kurtharriger@gmail.com>",
   "license": "MIT",
   "dependencies": {
     "content-type": "^1.0.4",
