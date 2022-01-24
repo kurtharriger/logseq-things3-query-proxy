@@ -8,7 +8,7 @@
     "build": "shadow-cljs compile main renderer",
     "lint": "cljstyle fix src",
     "clean": "rm -rf resources/public/js/* && rm -rf target",
-    "package": " electron-packager . \"Things Query Proxy\" --platform=darwin --arch=x64"
+    "package": "npm run clean && npm run build && electron-packager . \"Things Query Proxy\" --platform=darwin --arch=x64"
   },
   "keywords": [
     "shadow-cljs",
