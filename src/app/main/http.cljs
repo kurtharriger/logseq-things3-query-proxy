@@ -104,7 +104,7 @@
 (defn start-server!
   [{:keys [on-started on-error port public?]}]
   (let [host (if public? "0.0.0.0" "127.0.0.1")
-        port (or port 3000)
+        port (or port 7891)
         on-started (or on-started (constantly nil))
         on-error (or on-error (constantly nil))
         server
