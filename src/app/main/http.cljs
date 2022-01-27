@@ -2,6 +2,7 @@
   (:require
     [applied-science.js-interop :as j]
     [cljs.reader :refer [read-string]]
+    [clojure.string :as string]
     [com.wsscode.async.async-cljs :as wa :refer [go-promise  <?maybe]]
     [macchiato.middleware.params :as params]
     [macchiato.middleware.restful-format :as rf]
@@ -50,6 +51,11 @@
       (callback {:status 404 :body (str "no such db" db-name)}))))
 
 
+(defn accept-edn?
+  [request]
+  (string/includes? (get-in request [:headers "accept"]) "application/edn"))
+
+
 (defn dump-db
   [request callback]
   (debug request)
@@ -64,9 +70,10 @@
         (try
           (<?maybe (db/load-datascript! db))
           (info "data loaded")
-          (let [result (db/dump-db db)]
+          (let [result (db/dump-db db)
+                encoded (if (accept-edn? request) result (pr-str result))]
             (callback {:status 200
-                       :body {:data result}}))
+                       :body {:data encoded}}))
           (catch js/Error err
             (callback {:status 500 :body {:message (j/get err :message)}}))))
       (callback {:status 404 :body (str "no such db" db-name)}))))

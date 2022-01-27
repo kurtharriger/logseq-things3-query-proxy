@@ -93,7 +93,7 @@
 (defn dump-db
   [things-db]
   (let [conn (:datascript-conn things-db)]
-    (pr-str @conn)))
+    @conn))
 
 
 (def default-db (things-db "~/Library/Group Containers/JLMPQHK86H.com.culturedcode.ThingsMac/Things Database.thingsdatabase/main.sqlite"))
