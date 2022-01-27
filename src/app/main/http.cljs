@@ -30,9 +30,9 @@
 
 (defn query-db
   [request callback]
-  ;(debug request)
+  (trace request)
   (let [{:keys [db query inputs]} (:body request)
-        db-name db
+        db-name (keyword db)
         db (case db
              :demo db/demo-db
              db/default-db)]
@@ -52,10 +52,24 @@
 
 (defn dump-db
   [request callback]
-  (trace request)
-  (debug  (-> request :body))
-  (callback {:status 200
-             :body "Hello Macchiato2"}))
+  (debug request)
+  (let [db-name (get-in request [:query-params "db"])
+        db-name (keyword db-name)
+        db (case db-name
+             :demo db/demo-db
+             db/default-db)]
+    (info db-name db)
+    (if db
+      (go-promise
+       (try
+         (<?maybe (db/load-datascript! db))
+         (info "data loaded")
+         (let [result (db/dump-db db)]
+           (callback {:status 200
+                      :body {:data result}}))
+         (catch js/Error err
+           (callback {:status 500 :body {:message (j/get err :message)}}))))
+      (callback {:status 404 :body (str "no such db" db-name)}))))
 
 
 (def routes [["/db" {:get

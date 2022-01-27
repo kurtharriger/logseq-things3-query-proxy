@@ -59,7 +59,7 @@
   (when-let [ch (-> things-db :listener-chans deref key)]
     (async/close! ch))
   (swap! (:listener-chans things-db) dissoc key))
-  
+
 (defn load-datascript!
   [things-db]
   (let [conn (:datascript-conn things-db)
@@ -75,14 +75,20 @@
 
 (defn query [things-db query & inputs]
   (debug query inputs)
-  (let [r (apply (partial d/q query @(:datascript-conn things-db) ) inputs)]
+  (let [r (apply (partial d/q query @(:datascript-conn things-db)) inputs)]
     (debug r)
     r))
+
+(defn dump-db [things-db]
+  (let [conn (:datascript-conn things-db)]
+    (pr-str @conn))
+  )
 
 (def default-db (things-db "~/Library/Group Containers/JLMPQHK86H.com.culturedcode.ThingsMac/Things Database.thingsdatabase/main.sqlite"))
 
 ;; copied Things.sqlite3 from https://github.com/AlexanderWillner/things.sh 7104771af191eec196e4dff087ece02618b05e4c
 (def demo-db (things-db "resources/Things.sqlite3"))
+
 
 
 
@@ -97,7 +103,7 @@
       (when-let [changes (async/<! ch)]
         (pprint changes) (recur))
       (pprint "done.")))
-  
+
 
   (def last-gp (volatile! nil))
 
