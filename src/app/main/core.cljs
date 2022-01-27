@@ -9,9 +9,10 @@
             [applied-science.js-interop :as j]
             [cljs.core.async  :as async :refer [put! go-loop <!]]))
 
-; icon from https://www.flaticon.com/uicons?word=task
-; note: must specify abs path for it to work in package.
-; dirname is resources folder
+
+;; icon from https://www.flaticon.com/uicons?word=task
+;; note: must specify abs path for it to work in package.
+;; dirname is resources folder
 (def tray-icon (path/join js/__dirname "public/img/tray.png"))
 
 

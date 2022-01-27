@@ -1,16 +1,16 @@
 (ns app.main.http
   (:require
-   [applied-science.js-interop :as j]
-   [cljs.reader :refer [read-string]]
-   [com.wsscode.async.async-cljs :as wa :refer [go-promise  <?maybe]]
-   [macchiato.middleware.params :as params]
-   [macchiato.middleware.restful-format :as rf]
-   [macchiato.server :as http]
-   [reitit.ring :as ring]
-   [reitit.ring.coercion :as rrc]
+    [applied-science.js-interop :as j]
+    [cljs.reader :refer [read-string]]
+    [com.wsscode.async.async-cljs :as wa :refer [go-promise  <?maybe]]
+    [macchiato.middleware.params :as params]
+    [macchiato.middleware.restful-format :as rf]
+    [macchiato.server :as http]
+    [reitit.ring :as ring]
+    [reitit.ring.coercion :as rrc]
     ;; [reitit.ring.middleware.exception :as exception] ;clj only
-   [taoensso.timbre :refer [info error trace debug]]
-   [app.main.db :as db]))
+    [taoensso.timbre :refer [info error trace debug]]
+    [app.main.db :as db]))
 
 
 (defmethod rf/deserialize-request "application/edn"
@@ -39,14 +39,14 @@
     (info db-name query inputs)
     (if db
       (go-promise
-       (try
-         (<?maybe (db/load-datascript! db))
-         (info "data loaded")
-         (let [result (apply (partial db/query db query) inputs)]
-           (callback {:status 200
-                      :body {:data result}}))
-         (catch js/Error err
-           (callback {:status 500 :body {:message (j/get err :message)}}))))
+        (try
+          (<?maybe (db/load-datascript! db))
+          (info "data loaded")
+          (let [result (apply (partial db/query db query) inputs)]
+            (callback {:status 200
+                       :body {:data result}}))
+          (catch js/Error err
+            (callback {:status 500 :body {:message (j/get err :message)}}))))
       (callback {:status 404 :body (str "no such db" db-name)}))))
 
 
@@ -61,14 +61,14 @@
     (info db-name db)
     (if db
       (go-promise
-       (try
-         (<?maybe (db/load-datascript! db))
-         (info "data loaded")
-         (let [result (db/dump-db db)]
-           (callback {:status 200
-                      :body {:data result}}))
-         (catch js/Error err
-           (callback {:status 500 :body {:message (j/get err :message)}}))))
+        (try
+          (<?maybe (db/load-datascript! db))
+          (info "data loaded")
+          (let [result (db/dump-db db)]
+            (callback {:status 200
+                       :body {:data result}}))
+          (catch js/Error err
+            (callback {:status 500 :body {:message (j/get err :message)}}))))
       (callback {:status 404 :body (str "no such db" db-name)}))))
 
 
