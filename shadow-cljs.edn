@@ -14,7 +14,9 @@
                 [metosin/reitit-middleware "0.5.15"]
                 [metosin/spec-tools "0.10.3"]
                 [org.clojure/core.async "1.5.648"]
-                [reagent "1.1.0"]]
+                [org.clojure/data.xml "0.0.8"]
+                [reagent "1.1.0"]
+                ^:dev [cider/cider-nrepl "0.27.4"]]
 
  :dev-http {8080 "resources/public/"}
 
@@ -23,7 +25,7 @@
                  :main app.main.core/main
                  :devtools {:before-load-async app.main.core/before-load-async
                             :after-load app.main.core/after-load}}
-          
+
 
           :renderer {:target :browser
                      :output-dir "resources/public/js"
