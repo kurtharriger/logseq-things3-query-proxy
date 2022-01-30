@@ -345,15 +345,11 @@
                 checklist-item])
 
 
-;; (deftest a-failing-test
-;;   (is (= 1 2)))
-
-(defonce t-snapshot (atom nil))
 (deftest database-snapshot
   (pprint "running ")
   (async done
-         (go-promise
-          (let [snapshot (set (<?maybe (sql/snapshot (sql/open-db sql/test-demo-db))))]
-            (is (= (count snapshot) (count demo-data)) )
-            (is (every? snapshot demo-data))
-            (done)))))
+    (go-promise
+      (let [snapshot (set (<?maybe (sql/snapshot (sql/open-db sql/test-demo-db))))]
+        (is (= (count snapshot) (count demo-data)))
+        (is (every? snapshot demo-data))
+        (done)))))

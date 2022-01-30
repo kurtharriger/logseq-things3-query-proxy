@@ -256,10 +256,10 @@
           tasks (<?maybe (get-tasks db))
           checklistitems (<?maybe (get-checklistitems db))]
       (vec (concat areas
-                   projects
-                   actiongroups
-                   tasks
-                   checklistitems)))))
+             projects
+             actiongroups
+             tasks
+             checklistitems)))))
 
 
 (def test-demo-db "resources/Things.sqlite3")
