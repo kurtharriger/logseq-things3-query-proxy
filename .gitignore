@@ -9,6 +9,8 @@ target/
 .calva/
 .clj-kondo/
 .lsp/
+.cpcache/
 local/
+out/
 
 Things Query Proxy-darwin-x64/

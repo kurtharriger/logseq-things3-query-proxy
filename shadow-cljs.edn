@@ -30,4 +30,9 @@
           :renderer {:target :browser
                      :output-dir "resources/public/js"
                      :asset-path "js"
-                     :modules {:renderer {:init-fn app.renderer.core/main!}}}}}
+                     :modules {:renderer {:init-fn app.renderer.core/main!}}}
+
+          :test {:target    :node-test
+                 :output-to "out/node-tests.js"
+                 :ns-regexp "-test$"
+                 :autorun   true}}}
