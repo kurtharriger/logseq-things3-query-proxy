@@ -25,6 +25,7 @@
      :things.task/uuid {:db/unique :db.unique/identity}
      :things.task/area {:db/valueType :db.type/ref}
      :things.task/project {:db/valueType :db.type/ref}
+     :things.task/actionGroup {:db/valueType :db.type/ref}
      :things.task/repeatingTemplate {:db/valueType :db.type/ref}
 
      :things.checklistitem/uuid  {:db/unique :db.unique/identity}

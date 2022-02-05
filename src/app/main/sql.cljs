@@ -129,7 +129,7 @@
              :openUntrashedLeafActionsCount
              :untrashedLeafActionsCount}))
 
-    (update :actiongroup (as-ref :things.actiongroup/uuid))
+    (update :actionGroup (as-ref :things.actiongroup/uuid))
     (update :afterCompletionReferenceDate coerce-date)
     (update :area (as-ref :things.area/uuid))
     (update :creationDate coerce-date)
